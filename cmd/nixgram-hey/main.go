@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+    "strings"
 )
 
 func main() {
@@ -11,7 +12,7 @@ func main() {
         return
     }
     fmt.Printf("Hey %s!\n", os.Args[1])
-    for _, arg := range os.Args {
-        println(arg)
-    }
+
+    fmt.Println("\nInspect")
+    fmt.Printf("Args: [ %s ]", strings.Join(os.Args, ", "))
 }

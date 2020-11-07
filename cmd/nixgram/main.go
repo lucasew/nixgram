@@ -9,20 +9,32 @@ import (
 	"github.com/lucasew/nixgram"
 )
 
-func main() {
+var token string
+var adm int
+var err error
+
+func loadEnvironment() error {
     token := os.Getenv("NIXGRAM_TOKEN")
     if (token == "") {
-        panic("Missing NIXGRAM_TOKEN")
+        return fmt.Errorf("Missing NIXGRAM_TOKEN")
     }
-    adm := os.Getenv("NIXGRAM_ADM")
-    if (adm == "") {
-        panic("Missing NIXGRAM_ADM")
+    admStr := os.Getenv("NIXGRAM_ADM")
+    if (admStr == "") {
+        return fmt.Errorf("Missing NIXGRAM_ADM")
     }
-    admNum, err := strconv.Atoi(adm)
+    adm, err = strconv.Atoi(admStr)
     if (err != nil) {
-        panic(fmt.Sprintf("NIXGRAM_ADM: %s is not a number", adm))
+        return fmt.Errorf("NIXGRAM_ADM: %s is not a number", admStr)
     }
-    bot, err := nixgram.NewNixGram(token, admNum)
+    return nil
+}
+
+func main() {
+    err := loadEnvironment()
+    if err != nil {
+        panic(err)
+    }
+    bot, err := nixgram.NewNixGram(token, adm)
     if err != nil {
         panic(err)
     }

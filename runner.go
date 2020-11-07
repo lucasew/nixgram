@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+    "io"
 	"log"
 	"os/exec"
 	"strings"
@@ -28,36 +29,60 @@ func NewRunner(bot *NixGram, message string, sender int) (*Runner, error) {
     }, err
 }
 
-func (r *Runner) Run(ctx context.Context) error {
+func (r *Runner) getCommand() (string, bool) {
     cmdname := fmt.Sprintf("nixgram-%s", r.command)
-    log.Printf("Command %d: %s [ %s ]", r.sender, cmdname, strings.Join(r.args, ", "))
-    fullCmdName, err := exec.LookPath(cmdname)
+    fullCmd, err := exec.LookPath(cmdname)
     if err != nil {
-        r.bot.Bot.Send(tgbotapi.NewMessage(int64(r.sender), fmt.Sprintf("Comando não encontrado: %s", r.command)))
+        return "", false
+    }
+    return fullCmd, true
+}
+
+func (r *Runner) sendMessage(msg string) error {
+    _, err := r.bot.Bot.Send(tgbotapi.NewMessage(int64(r.sender), msg))
+    return err
+}
+
+func (r *Runner) sendTextFile(b *bytes.Buffer) error {
+    _, err := r.bot.Bot.Send(tgbotapi.NewDocumentUpload(int64(r.sender), tgbotapi.FileReader{
+        Name: "out.txt",
+        Reader: b,
+        Size: int64(b.Len()),
+    }))
+    return err
+}
+
+func (r *Runner) handleCommand(ctx context.Context, b io.Writer) error {
+    cmdPath, ok := r.getCommand()
+    if !ok {
+        return fmt.Errorf("comando %s não encontrado", r.command)
+    }
+    cmd := exec.CommandContext(ctx, cmdPath, r.args...)
+    cmd.Stdout = b
+    cmd.Stderr = b
+    return cmd.Run()
+}
+
+func (r *Runner) Run(ctx context.Context) error {
+    log.Printf("Command %d: %s [ %s ]", r.sender, r.command, strings.Join(r.args, ", "))
+    _, ok := r.getCommand()
+    if !ok {
+        err := fmt.Errorf("comando %s não encontrado", r.command)
+        r.sendMessage(err.Error())
         return err
     }
     out := bytes.NewBuffer([]byte{})
-    cmd := exec.CommandContext(ctx, fullCmdName, r.args...)
-    cmd.Stdout = out
-    cmd.Stderr = out
-    err = cmd.Run()
+    err := r.handleCommand(ctx, out)
     if err != nil {
         return err
     }
-    _, err = r.bot.Bot.Send(tgbotapi.NewMessage(int64(r.sender), out.String()))
-    if err != nil {
-        _, err = r.bot.Bot.Send(tgbotapi.NewDocumentUpload(int64(r.sender), tgbotapi.FileReader{
-            Name: "out.txt",
-            Reader: out,
-            Size: int64(out.Len()),
-        }))
-        if err != nil {
-            return err
-        }
+    if r.sendMessage(out.String()) != nil {
+        return r.sendTextFile(out)
     }
     return nil
 }
 
+//TODO: Write a better splitter
 func PocSplitter(text string) ([]string, error) {
     trimmed := strings.Trim(text, " /")
     return strings.Split(trimmed, " "), nil

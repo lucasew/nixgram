@@ -14,7 +14,7 @@ var adm int
 var err error
 
 func loadEnvironment() error {
-    token := os.Getenv("NIXGRAM_TOKEN")
+    token = os.Getenv("NIXGRAM_TOKEN")
     if (token == "") {
         return fmt.Errorf("Missing NIXGRAM_TOKEN")
     }

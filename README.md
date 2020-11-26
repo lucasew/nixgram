@@ -1,4 +1,5 @@
-# nixgram
+# nixgram ![cachix:lucasew-github](https://img.shields.io/github/workflow/status/lucasew/nixgram/Cachix?label=cachix%3Alucasew-github&logo=github&style=flat-square)
+
 Run custom system commands as a telegram bot
 
 When you run nixgram it needs the bot token and the user id of the administrator.

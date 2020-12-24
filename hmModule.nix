@@ -2,9 +2,7 @@
 with lib;
 let 
   nixgram = pkgs.callPackage ./package.nix {};
-  dotenv = import "${builtins.fetchGit {
-    url = "https://github.com/lucasew/dotenv";
-  }}";
+  dotenv = import ./.;
   nixgramService = dotenvFile: pkgs.writeShellScript "nixgram-service" ''
     ${dotenv}/bin/dotenv @${builtins.toString dotenvFile} -- ${nixgram}/bin/nixgram
   '';

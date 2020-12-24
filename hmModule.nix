@@ -2,7 +2,7 @@
 with lib;
 let 
   nixgram = pkgs.callPackage ./package.nix {};
-  dotenv = import ./.;
+  dotenv = pkgs.dotenv;
   nixgramService = dotenvFile: pkgs.writeShellScript "nixgram-service" ''
     ${dotenv}/bin/dotenv @${builtins.toString dotenvFile} -- ${nixgram}/bin/nixgram
   '';

@@ -1,4 +1,4 @@
-{pkgs, ...}:
+{pkgs ? import <nixpkgs> {}, ...}:
 pkgs.buildGoModule rec {
   name = "nixgram";
   version = "0.0.1";

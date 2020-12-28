@@ -75,7 +75,7 @@ func (r *Runner) Run(ctx context.Context) error {
     r.sendMessage("Running...")
     err := r.handleCommand(ctx, out)
     if r.sendMessage(out.String()) != nil {
-        return r.sendTextFile(out)
+        r.sendTextFile(out)
     }
     if err != nil {
         r.sendMessage(fmt.Sprintf("Error: %s", err))

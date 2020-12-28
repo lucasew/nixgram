@@ -72,8 +72,10 @@ func (r *Runner) Run(ctx context.Context) error {
         return err
     }
     out := bytes.NewBuffer([]byte{})
+    r.sendMessage("Running...")
     err := r.handleCommand(ctx, out)
     if err != nil {
+        r.sendMessage(fmt.Sprintf("Error: %s", err))
         return err
     }
     if r.sendMessage(out.String()) != nil {

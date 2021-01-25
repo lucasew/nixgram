@@ -55,8 +55,10 @@ func (n *NixGram) handleMessage(ctx context.Context, u tgbotapi.Update) {
     if err != nil {
         return
     }
-    err = r.Run(ctx)
-    if (err != nil) {
-        log.Printf("ERRO: (%d) %s", u.Message.From.ID, err.Error())
-    }
+    go func() {
+        err = r.Run(ctx)
+        if (err != nil) {
+            log.Printf("ERRO: (%d) %s", u.Message.From.ID, err.Error())
+        }
+    }()
 }

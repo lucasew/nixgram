@@ -8,7 +8,7 @@ buildGoModule {
 
   src = ./.;
 
-  vendorHash = "sha256-cmiQg6EEbaJDTzTt+uHMo8Y3lH4MiZEnpn1Ef8hbbpA=";
+  vendorHash = "sha256-QoVryPstnfdvc390pgAeLF04AXNzR2BEXLXY2isTK+s=";
 
   meta = with lib; {
     description = "A smol software that can interface with commands using telegram";

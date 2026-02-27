@@ -1,0 +1,17 @@
+[tools]
+go = "1.23.0"
+python = "3.12.0"
+"ubi:lucasew/workspaced" = "0.1.5"
+
+[tasks]
+"install" = { depends = ["install:*"] }
+"install:go" = "go mod download"
+"test" = { depends = ["test:*"] }
+"test:unit" = "go test ./..."
+"codegen" = { depends = ["codegen:*"] }
+"codegen:nix" = "python3 .github/update-nix-hashes.py"
+"codegen:tidy" = "go mod tidy"
+"lint" = "workspaced codebase lint"
+"fmt" = "workspaced codebase format"
+"ci" = { depends = ["lint", "test"] }
+"build" = "go build -o nixgram ."

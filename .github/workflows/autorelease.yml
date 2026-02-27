@@ -35,6 +35,7 @@ jobs:
       - uses: jdx/mise-action@v2
         with:
           version: 2025.2.6
+          install: false
 
       - name: Install dependencies
         run: mise run install

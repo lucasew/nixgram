@@ -1,7 +1,7 @@
 [tools]
 go = "1.23.0"
 python = "3.12.0"
-"ubi:lucasew/workspaced" = "0.1.5"
+"github:lucasew/workspaced" = "0.1.5"
 
 [tasks]
 "install" = { depends = ["install:*"] }

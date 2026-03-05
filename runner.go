@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/lucasew/nixgram/pkg/errreporter"
 )
 
 type Runner struct {
@@ -68,17 +69,25 @@ func (r *Runner) Run(ctx context.Context) error {
     _, ok := r.getCommand()
     if !ok {
         err := fmt.Errorf("comando %s não encontrado", r.command)
-        r.sendMessage(err.Error())
+        if sendErr := r.sendMessage(err.Error()); sendErr != nil {
+            errreporter.ReportError(sendErr, "failed to send command not found message")
+        }
         return err
     }
     out := bytes.NewBuffer([]byte{})
-    r.sendMessage("Running...")
+    if sendErr := r.sendMessage("Running..."); sendErr != nil {
+        errreporter.ReportError(sendErr, "failed to send Running message")
+    }
     err := r.handleCommand(ctx, out)
-    if r.sendMessage(out.String()) != nil {
-        r.sendTextFile(out)
+    if sendErr := r.sendMessage(out.String()); sendErr != nil {
+        if fileErr := r.sendTextFile(out); fileErr != nil {
+            errreporter.ReportError(fileErr, "failed to send text file fallback")
+        }
     }
     if err != nil {
-        r.sendMessage(fmt.Sprintf("Error: %s", err))
+        if sendErr := r.sendMessage(fmt.Sprintf("Error: %s", err)); sendErr != nil {
+            errreporter.ReportError(sendErr, "failed to send error message")
+        }
         return err
     }
     return nil

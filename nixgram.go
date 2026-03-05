@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/lucasew/nixgram/pkg/errreporter"
 )
 
 type NixGram struct {
@@ -53,12 +54,13 @@ func (n *NixGram) handleMessage(ctx context.Context, u tgbotapi.Update) {
     }
     r, err := NewRunner(n, u.Message.Text, u.Message.From.ID)
     if err != nil {
+        errreporter.ReportError(err, "failed to create runner")
         return
     }
     go func() {
         err = r.Run(ctx)
         if (err != nil) {
-            log.Printf("ERRO: (%d) %s", u.Message.From.ID, err.Error())
+            errreporter.ReportError(err, "runner execution failed")
         }
     }()
 }

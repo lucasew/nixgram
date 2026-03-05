@@ -7,36 +7,40 @@ import (
 	"strconv"
 
 	"github.com/lucasew/nixgram"
+	"github.com/lucasew/nixgram/pkg/errreporter"
 )
 
-var token string
-var adm int
-var err error
+type Config struct {
+    Token string
+    Adm   int
+}
 
-func loadEnvironment() error {
-    token = os.Getenv("NIXGRAM_TOKEN")
+func loadEnvironment() (*Config, error) {
+    token := os.Getenv("NIXGRAM_TOKEN")
     if (token == "") {
-        return fmt.Errorf("Missing NIXGRAM_TOKEN")
+        return nil, fmt.Errorf("Missing NIXGRAM_TOKEN")
     }
     admStr := os.Getenv("NIXGRAM_ADM")
     if (admStr == "") {
-        return fmt.Errorf("Missing NIXGRAM_ADM")
+        return nil, fmt.Errorf("Missing NIXGRAM_ADM")
     }
-    adm, err = strconv.Atoi(admStr)
+    adm, err := strconv.Atoi(admStr)
     if (err != nil) {
-        return fmt.Errorf("NIXGRAM_ADM: %s is not a number", admStr)
+        return nil, fmt.Errorf("NIXGRAM_ADM: %s is not a number", admStr)
     }
-    return nil
+    return &Config{Token: token, Adm: adm}, nil
 }
 
 func main() {
-    err := loadEnvironment()
+    config, err := loadEnvironment()
     if err != nil {
-        panic(err)
+        errreporter.ReportError(err, "failed to load environment")
+        os.Exit(1)
     }
-    bot, err := nixgram.NewNixGram(token, adm)
+    bot, err := nixgram.NewNixGram(config.Token, config.Adm)
     if err != nil {
-        panic(err)
+        errreporter.ReportError(err, "failed to initialize bot")
+        os.Exit(1)
     }
     bot.Run(context.Background())
 }

@@ -4,88 +4,103 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-    "io"
+	"io"
 	"log"
 	"os/exec"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/lucasew/nixgram/pkg/errreporter"
 )
 
 type Runner struct {
-    bot *NixGram
-    command string
-    args []string
-    sender int
+	bot     *NixGram
+	command string
+	args    []string
+	sender  int
 }
 
 func NewRunner(bot *NixGram, message string, sender int) (*Runner, error) {
-    params, err := PocSplitter(message)
-    return &Runner{
-        bot: bot,
-        command: params[0],
-        args: params[1:],
-        sender: sender,
-    }, err
+	params, err := PocSplitter(message)
+	return &Runner{
+		bot:     bot,
+		command: params[0],
+		args:    params[1:],
+		sender:  sender,
+	}, err
 }
 
 func (r *Runner) getCommand() (string, bool) {
-    cmdname := fmt.Sprintf("nixgram-%s", r.command)
-    fullCmd, err := exec.LookPath(cmdname)
-    if err != nil {
-        return "", false
-    }
-    return fullCmd, true
+	cmdname := fmt.Sprintf("nixgram-%s", r.command)
+	fullCmd, err := exec.LookPath(cmdname)
+	if err != nil {
+		return "", false
+	}
+	return fullCmd, true
 }
 
 func (r *Runner) sendMessage(msg string) error {
-    _, err := r.bot.Bot.Send(tgbotapi.NewMessage(int64(r.sender), msg))
-    return err
+	_, err := r.bot.Bot.Send(tgbotapi.NewMessage(int64(r.sender), msg))
+	return err
 }
 
 func (r *Runner) sendTextFile(b *bytes.Buffer) error {
-    _, err := r.bot.Bot.Send(tgbotapi.NewDocumentUpload(int64(r.sender), tgbotapi.FileReader{
-        Name: "out.txt",
-        Reader: b,
-        Size: int64(b.Len()),
-    }))
-    return err
+	_, err := r.bot.Bot.Send(tgbotapi.NewDocumentUpload(int64(r.sender), tgbotapi.FileReader{
+		Name:   "out.txt",
+		Reader: b,
+		Size:   int64(b.Len()),
+	}))
+	return err
 }
 
 func (r *Runner) handleCommand(ctx context.Context, b io.Writer) error {
-    cmdPath, ok := r.getCommand()
-    if !ok {
-        return fmt.Errorf("comando %s não encontrado", r.command)
-    }
-    cmd := exec.CommandContext(ctx, cmdPath, r.args...)
-    cmd.Stdout = b
-    cmd.Stderr = b
-    return cmd.Run()
+	cmdPath, ok := r.getCommand()
+	if !ok {
+		return fmt.Errorf("comando %s não encontrado", r.command)
+	}
+	cmd := exec.CommandContext(ctx, cmdPath, r.args...)
+	cmd.Stdout = b
+	cmd.Stderr = b
+	return cmd.Run()
 }
 
 func (r *Runner) Run(ctx context.Context) error {
-    log.Printf("Command %d: %s [ %s ]", r.sender, r.command, strings.Join(r.args, ", "))
-    _, ok := r.getCommand()
-    if !ok {
-        err := fmt.Errorf("comando %s não encontrado", r.command)
-        r.sendMessage(err.Error())
-        return err
-    }
-    out := bytes.NewBuffer([]byte{})
-    r.sendMessage("Running...")
-    err := r.handleCommand(ctx, out)
-    if r.sendMessage(out.String()) != nil {
-        r.sendTextFile(out)
-    }
-    if err != nil {
-        r.sendMessage(fmt.Sprintf("Error: %s", err))
-        return err
-    }
-    return nil
+	log.Printf("Command %d: %s [ %s ]", r.sender, r.command, strings.Join(r.args, ", "))
+	_, ok := r.getCommand()
+	if !ok {
+		err := fmt.Errorf("comando %s não encontrado", r.command)
+		if sendErr := r.sendMessage(err.Error()); sendErr != nil {
+			errreporter.ReportError(sendErr, map[string]interface{}{"context": "sendMessage", "sender": r.sender})
+		}
+		errreporter.ReportError(err, map[string]interface{}{"command": r.command, "sender": r.sender})
+		return err
+	}
+	out := bytes.NewBuffer([]byte{})
+	if sendErr := r.sendMessage("Running..."); sendErr != nil {
+		errreporter.ReportError(sendErr, map[string]interface{}{"context": "sendMessage", "sender": r.sender})
+	}
+	err := r.handleCommand(ctx, out)
+
+	sendMsgErr := r.sendMessage(out.String())
+	if sendMsgErr != nil {
+		errreporter.ReportError(sendMsgErr, map[string]interface{}{"context": "sendMessage", "sender": r.sender})
+		sendFileErr := r.sendTextFile(out)
+		if sendFileErr != nil {
+			errreporter.ReportError(sendFileErr, map[string]interface{}{"context": "sendTextFile", "sender": r.sender})
+		}
+	}
+	if err != nil {
+		if sendErr := r.sendMessage(fmt.Sprintf("Error: %s", err)); sendErr != nil {
+			errreporter.ReportError(sendErr, map[string]interface{}{"context": "sendMessage", "sender": r.sender})
+		}
+		errreporter.ReportError(err, map[string]interface{}{"command": r.command, "args": r.args, "sender": r.sender})
+		return err
+	}
+	return nil
 }
 
-//TODO: Write a better splitter
+// TODO: Write a better splitter
 func PocSplitter(text string) ([]string, error) {
-    trimmed := strings.Trim(text, " /")
-    return strings.Split(trimmed, " "), nil
+	trimmed := strings.Trim(text, " /")
+	return strings.Split(trimmed, " "), nil
 }

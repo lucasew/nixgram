@@ -1,0 +1,10 @@
+[tools]
+go = "1.21.0"
+golangci-lint = "1.54.2"
+
+[tasks]
+install = { run = "go mod download" }
+test = { run = "go test ./..." }
+codegen = { run = "go generate ./..." }
+lint = { run = "golangci-lint run" }
+fmt = { run = "go fmt ./..." }

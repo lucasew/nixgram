@@ -7,12 +7,17 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
+// NixGram represents the Telegram bot state and configuration.
+// It enforces a single-administrator security model where only the
+// user with the specified Adm ID can interact with the bot.
 type NixGram struct {
     Bot *tgbotapi.BotAPI
     updatesChan tgbotapi.UpdatesChannel
     Adm int
 }
 
+// NewNixGram initializes a new Telegram bot instance and its update channel.
+// The bot is configured to only process messages from the provided adm ID.
 func NewNixGram(token string, adm int) (*NixGram, error) {
     bot, err := tgbotapi.NewBotAPI(token)
     if err != nil {
@@ -32,6 +37,9 @@ func NewNixGram(token string, adm int) (*NixGram, error) {
     }, nil
 }
 
+// Run starts the main polling loop for Telegram updates.
+// It blocks until the context is canceled, spawning a new runner
+// for each authorized message.
 func (n* NixGram) Run(ctx context.Context) {
     for {
         select {

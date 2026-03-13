@@ -12,6 +12,8 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
+// Runner holds the execution state for a single user command.
+// It tracks the parsed command, arguments, and the ID of the requesting user.
 type Runner struct {
     bot *NixGram
     command string
@@ -19,6 +21,8 @@ type Runner struct {
     sender int
 }
 
+// NewRunner parses a Telegram text message into an executable command
+// and arguments, associating them with a specific user session.
 func NewRunner(bot *NixGram, message string, sender int) (*Runner, error) {
     params, err := PocSplitter(message)
     return &Runner{
@@ -63,6 +67,9 @@ func (r *Runner) handleCommand(ctx context.Context, b io.Writer) error {
     return cmd.Run()
 }
 
+// Run executes the command in the foreground.
+// Commands are dynamically prefixed with "nixgram-" and looked up in $PATH.
+// Depending on output size, the result is sent as a Telegram message or attached as a file.
 func (r *Runner) Run(ctx context.Context) error {
     log.Printf("Command %d: %s [ %s ]", r.sender, r.command, strings.Join(r.args, ", "))
     _, ok := r.getCommand()
@@ -84,7 +91,10 @@ func (r *Runner) Run(ctx context.Context) error {
     return nil
 }
 
-//TODO: Write a better splitter
+// PocSplitter tokenizes a text command string into a command and slice of arguments.
+// It removes trailing/leading slashes and spaces before splitting by spaces.
+//
+// TODO: Write a better splitter
 func PocSplitter(text string) ([]string, error) {
     trimmed := strings.Trim(text, " /")
     return strings.Split(trimmed, " "), nil

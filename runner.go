@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/lucasew/nixgram/pkg/errreporter"
 )
 
 // Runner encapsulates the execution context for a single command triggered by a user.
@@ -77,17 +78,25 @@ func (r *Runner) Run(ctx context.Context) error {
 	_, ok := r.getCommand()
 	if !ok {
 		err := fmt.Errorf("comando %s não encontrado", r.command)
-		r.sendMessage(err.Error())
+		if sendErr := r.sendMessage(err.Error()); sendErr != nil {
+			errreporter.ReportError("Failed to send command not found message", sendErr)
+		}
 		return err
 	}
 	out := bytes.NewBuffer([]byte{})
-	r.sendMessage("Running...")
+	if sendErr := r.sendMessage("Running..."); sendErr != nil {
+		errreporter.ReportError("Failed to send 'Running...' status", sendErr)
+	}
 	err := r.handleCommand(ctx, out)
 	if r.sendMessage(out.String()) != nil {
-		r.sendTextFile(out)
+		if fileErr := r.sendTextFile(out); fileErr != nil {
+			errreporter.ReportError("Failed to upload output text file", fileErr)
+		}
 	}
 	if err != nil {
-		r.sendMessage(fmt.Sprintf("Error: %s", err))
+		if sendErr := r.sendMessage(fmt.Sprintf("Error: %s", err)); sendErr != nil {
+			errreporter.ReportError("Failed to send command error message", sendErr)
+		}
 		return err
 	}
 	return nil

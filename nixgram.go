@@ -4,7 +4,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/lucasew/nixgram/pkg/errreporter"
 )
 
 // NixGram orchestrates the Telegram bot connection and message routing.
@@ -67,7 +68,7 @@ func (n *NixGram) handleMessage(ctx context.Context, u tgbotapi.Update) {
 	go func() {
 		err = r.Run(ctx)
 		if err != nil {
-			log.Printf("ERRO: (%d) %s", u.Message.From.ID, err.Error())
+			errreporter.ReportError("Failed to run command for user", err)
 		}
 	}()
 }

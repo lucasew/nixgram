@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 // NixGram orchestrates the core bot lifecycle. It holds the active Telegram
